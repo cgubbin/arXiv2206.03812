@@ -7,6 +7,13 @@ include("TransferMatrix.jl");
 
 using Optim;
 
+"""
+	bilayer_sphp_dispersion(k_x)
+
+	Calculate the dispersion of a surface phonon polariton on the bilayer between the 
+	polar dielectric with parameters outlined in "Constants.jl" and a positive dielectric
+	cladding with dielectric function ε_c
+"""
 function bilayer_sphp_dispersion(k_x)
 	sqrt(
         c_0^2 * k_x^2 * (1. / ε_c + 1. / ε_∞) + ω_L^2
@@ -18,6 +25,13 @@ function bilayer_sphp_dispersion(k_x)
     ) / sqrt(2)
 end
 
+"""
+	epsilon_near_zero_dispersion(k, d, initial)
+
+	Computes the dispersion of the epsilon near zero mode in a polar film of thickness
+	d at in-plane wavevector k. Also takes a guess "initial", which is in 100THz, and 
+	is a jumping off point for the optimisation procedure.
+	"""
 function epsilon_near_zero_dispersion!(k, d, initial)
 	thicknesses = [ustrip(d)];
 	εs = [ε_Si, ε_SiC, ε_Si];
@@ -29,6 +43,12 @@ function epsilon_near_zero_dispersion!(k, d, initial)
 	return result * 1e14u"1/s"
 end
 
+"""
+	ω_n(k, d, m)	
+
+	The frequency of the mth localised phonon mode in a polar film of thickness d at in-plane
+	wavevector K
+"""
 function ω_n(k, d, m)
     n = 2 * m - 1
     return sqrt(

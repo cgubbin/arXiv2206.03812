@@ -137,7 +137,30 @@ function gammaKernelStrippedkz(q::Float64, k_zd::Float64, k::Float64, k_z::Float
 end
 
 
-function gammaIntegratedkzj(q, ω_ENZ, d, electronic_temperature, n_max, j, p)
+function gammaIntegratedkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max, j)
+
+	rate::Float64 = 0;
+	error::Float64 = 0;
+
+
+	ω_j::Float64 = ustrip(ω_pol[j](q));
+	β_j::ComplexF64 = β_enz[j](q);
+
+	q = ustrip(q);
+	electronic_temperature = ustrip(electronic_temperature);
+	d = ustrip(d);
+	 
+ 	result = hcubature(
+			x -> 2 * π * x[1] * gammaKernelStrippedkz(q, x[4], x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0, 0], [1e9, 2 * π, 1e9, 1e9];
+			reltol=1e-2# maxevals=5000000
+		)
+	rate += result[1]
+	error += result[2]
+	# next!(p)
+	rate, error
+end
+
+function gammaIntegratedkzjo(q, ω_ENZ, d, electronic_temperature, n_max, j, p)
 
 	rate::Float64 = 0;
 	error::Float64 = 0;
