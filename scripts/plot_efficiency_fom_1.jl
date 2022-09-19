@@ -1,4 +1,5 @@
 include("../src/ENZ.jl")
+include("EvaluationConstants.jl")
 
 using CairoMakie;
 using DelimitedFiles
@@ -16,22 +17,17 @@ function wavenumber_to_omega(wn)
 	return k * c_0
 end
 
-thickness_target = "2nm";
-d = 2e-9u"m";
-n_max = 2;
-files_to_act_on = filter(contains("2nm"), readdir("results"))
+println("Arranging for eta_1 computation")
+files_to_act_on = filter(contains(thickness_target), readdir("results"))
 
 ### Act to construct the epsilon_near_zero_dispersion
 # Precompute the epsilon_near_zero_dispersion
-minimum_wavevector = ENZ.ω_L * sqrt(ENZ.ε_c) / ENZ.c_0 * 1.4;
-maximum_wavevector = 1e9u"1/m"
-wavevectors = LinRange(minimum_wavevector, maximum_wavevector, 5000);
-initial = [1.75];
-enz_frequencies = [ENZ.epsilon_near_zero_dispersion!(k, d, initial) for (idx, k) in enumerate(wavevectors)]
+wavevectors = LinRange(minimum_wavevector, maximum_wavevector, number_of_interpolation_bins);
+initial_guess = [initial];
+enz_frequencies = [ENZ.epsilon_near_zero_dispersion!(k, d, initial_guess) for (idx, k) in enumerate(wavevectors)]
 
 ω_ENZ_int = linear_interpolation(wavevectors, enz_frequencies)
 
-initial = [1.75];
 pol_frequencies = [ENZ.polariton_eigenvalues_from_enz_ω(k, d, ω_ENZ_int(k), n_max)[1] for k in wavevectors]
 pol_frequencies = mapreduce(permutedims, vcat, pol_frequencies);
 
@@ -45,19 +41,14 @@ vg3(x) = Interpolations.gradient(ω_p3_int, x) / c_0
 
 vgs(x) = [vg1(x), vg2(x), vg3(x)]
 
-n_bin_k = 200;
-n_bin_ω = 200;
-wavevectors = LinRange(minimum_wavevector, maximum_wavevector, n_bin_k);
-wavenumbers = LinRange(82500u"1/m", 100000u"1/m", n_bin_ω);
+wavevectors = LinRange(minimum_wavevector, maximum_wavevector, number_of_plotting_bins);
+wavenumbers = LinRange(minimum_wavenumber, maximum_wavenumber, number_of_plotting_bins);
 frequencies = [wavenumber_to_omega(wn) for wn in wavenumbers]
 
-initial = [1.75];
 pol_frequencies = [ENZ.polariton_eigenvalues_from_enz_ω(k, d, ω_ENZ_int(k), n_max)[1] for k in wavevectors]
 @cast pol_frequencies[i,j] := pol_frequencies[i][j]
 pol_eigenvectors = [ENZ.polariton_eigenvalues_from_enz_ω(k, d, ω_ENZ_int(k), n_max)[2] for k in wavevectors]
 @cast pol_eigenvectors[i,j,k] := pol_eigenvectors[i][j,k]
-
-T_lattice = 300u"K"
 
 n_thermal = [ENZ.bose_einstein(ω, T_lattice) for ω in pol_frequencies]
 
@@ -78,6 +69,7 @@ for file in files_to_act_on
 	substrings = split(split(file, ".")[1], "_")
 	t_term = substrings[3]
 	d_term = substrings[2]
+    println(f"Evaluating eta_1 for thickness {d_term}nm at {t_term}K");
 
 	save(f"figures/efficiency_{d_term}_{t_term}.pdf", current_figure())
 end;

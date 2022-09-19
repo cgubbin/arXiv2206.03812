@@ -1,3 +1,4 @@
+include("EvaluationConstants.jl")
 include("../src/Rates.jl")
 include("../src/ENZ.jl")
 
@@ -18,17 +19,11 @@ function wavenumber_to_omega(wn)
 end
 
 
-d = 2e-9u"m"
-n_max = 2;
-T_lattice = 300u"K"
-
 
 # Precompute the epsilon_near_zero_dispersion
-minimum_wavevector = ENZ.ω_L * sqrt(ENZ.ε_c) / ENZ.c_0 * 1.4;
-maximum_wavevector = 1e9u"1/m"
-wavevectors = LinRange(minimum_wavevector, maximum_wavevector, 5000);
-initial = [1.75];
-enz_frequencies = [ENZ.epsilon_near_zero_dispersion!(k, d, initial) for (idx, k) in enumerate(wavevectors)]
+wavevectors = LinRange(minimum_wavevector, maximum_wavevector, number_of_interpolation_bins);
+initial_guess = [initial];
+enz_frequencies = [ENZ.epsilon_near_zero_dispersion!(k, d, initial_guess) for (idx, k) in enumerate(wavevectors)]
 
 ω_ENZ_int = linear_interpolation(wavevectors, enz_frequencies)
 

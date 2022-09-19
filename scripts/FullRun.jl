@@ -1,5 +1,11 @@
+using Pkg;
+Pkg.instantiate();
+
+println("Running dispersion generator")
 include("GenerateDispersionPlots.jl")
 
-dispersion_figure = generate_plot();
-
+println("Generating the Gamma")
 include("GenerateGamma.jl")
+
+println("Plotting the figures")
+include("GeneratePlots.jl")

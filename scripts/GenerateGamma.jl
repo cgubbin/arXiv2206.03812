@@ -56,33 +56,36 @@ polariton_ω, group_velocities, enz_hopfield = generate_polariton_properties();
 wavevectors = LinRange(minimum_wavevector, maximum_wavevector, number_of_plotting_bins);
 
 if nprocs() == 1
-	addprocs(8, topology=:master_worker, exeflags="--project=$(Base.active_project())")
+	addprocs(40, topology=:master_worker, exeflags="--project=$(Base.active_project())")
 end
 
 @everywhere begin
   # instantiate environment
-  using Pkg; Pkg.instantiate()
-	include("EvaluationConstants.jl")
-	include("../src/RatesTyped.jl")
+  println("Instantiating on each node");
+  using Pkg;
+  Pkg.instantiate();
+  include("EvaluationConstants.jl")
+  include("../src/RatesTyped.jl")
 
-	using Interpolations;
-	using Unitful;
+  using Interpolations;
+  using Unitful;
 
-	function generate_single_temperature(wavevector, temperature, polariton_ω, enz_hopfield, group_velocities)
-		result = [
-			RatesTyped.gammaIntegratedkzj(wavevector, polariton_ω, enz_hopfield, d, temperature, n_max, j)[1]
-			for j in 1:n_max+1
-		];
+  function generate_single_temperature(wavevector, temperature, polariton_ω, enz_hopfield, group_velocities)
+      result = [
+                RatesTyped.gammaIntegratedkzj(wavevector, polariton_ω, enz_hopfield, d, temperature, n_max, j)[1]
+                for j in 1:n_max+1
+               ];
 
-		result
-	end
-
+	  result
+  end
 end
 
 
-println(nprocs())
+println(f"Running on {nprocs()}")
+
 for temperature in temperatures
 	stripped_temperature = ustrip(temperature);
+    println(f"Evaluating for temperature {stripped_temperature}K")
 	result = @showprogress 1 f"Computing temperature {stripped_temperature}K..." pmap(wavevectors) do q
 		try
 			x = generate_single_temperature(
@@ -101,7 +104,7 @@ for temperature in temperatures
 
 	stripped_thickness = ustrip(d) / 1e-9;
 
-	outfile = f"results_tmp/ep_{stripped_thickness:.0f}nm_{stripped_temperature:.0f}K.csv"
+	outfile = f"results/ep_{stripped_thickness:.0f}nm_{stripped_temperature:.0f}K.csv"
 	writedlm(outfile, result, ",");
 
 end

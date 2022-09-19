@@ -16,6 +16,7 @@ end
 
 function generate_plot()
 	# Generate a linear range of wavevectors over which to calculate the initial local dispersion
+    println("Generating the ENZ interpolation")
 	initial_guess = [initial];
 	wavevectors = LinRange(minimum_wavevector, maximum_wavevector, number_of_interpolation_bins);
 	enz_frequencies = [ENZ.epsilon_near_zero_dispersion!(k, d, initial_guess) for k in wavevectors]
@@ -24,6 +25,7 @@ function generate_plot()
 	enz_interp = linear_interpolation(wavevectors, enz_frequencies)
 	interp = [enz_interp(k) for k in wavevectors];
 
+    println("Calculating the polariton frequencies")
 	# Calculate the polariton frequencies
 	initial_guess = [initial];
 	pol_frequencies = [ENZ.polariton_eigenvalues!(k, d, initial_guess, n_max)[1] for k in wavevectors]
@@ -31,6 +33,7 @@ function generate_plot()
 	pol_eigenvectors = [ENZ.polariton_eigenvalues!(k, d, initial_guess, n_max)[2] for k in wavevectors]
 	@cast pol_eigenvectors[i, j, k] := pol_eigenvectors[i][j, k];
 
+    println("Plotting the figure");
 	# Plot limits and discretisation
 	frequencies = LinRange(minimum_frequency, maximum_frequency, number_of_plotting_bins)
 	wavevectors_map = LinRange(minimum_wavevector, maximum_wavevector, number_of_plotting_bins);
@@ -59,4 +62,5 @@ function generate_plot()
 end
 
 fig, results = generate_plot()
+println("Saving dispersion plot to file")
 save(f"figures/dispersion_{thickness_nm}nm.pdf", fig)

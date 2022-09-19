@@ -8,6 +8,7 @@ function wavenumber_to_omega(wn)
 	return k * c_0
 end
 
+const thickness_target = "3nm" # A string for the target thickness so we can file pick
 const thickness_nm = 3; # The target thickness for the simulation in nm
 const d = thickness_nm * 1e-9u"m" # The target thickness for the simulation
 const n_max = 3; # The number of phonon modes to include in the problem
@@ -18,8 +19,10 @@ const maximum_wavevector = 1e9u"1/m"; # The cut-off wavevector for plotting and 
 const minimum_frequency = wavenumber_to_omega(minimum_wavenumber);
 const maximum_frequency = wavenumber_to_omega(maximum_wavenumber);
 const number_of_interpolation_bins = 1000; # The number of bins for constructing the interpolation functions
-const number_of_plotting_bins = 200; # The number of bins for plot output
+# const number_of_plotting_bins = 200; # The number of bins for plot output
+const number_of_plotting_bins = 20; # The number of bins for plot output
 const initial = 1.75 # The inital frequency guess in 100THz, for calculating the mode dispersion
 const T_lattice = 300u"K"; # The lattice temperature in Kelvin
 
-const temperatures = LinRange(400, 2000, 17) * 1u"K"; # The default temperatures to run the calculation over
+#const temperatures = LinRange(400, 2000, 17) * 1u"K"; # The default temperatures to run the calculation over
+const temperatures = LinRange(400, 500, 2) * 1u"K"; # The default temperatures to run the calculation over

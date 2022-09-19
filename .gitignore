@@ -4,3 +4,5 @@ figures_tmp/
 results_tmp/
 .DS_Store
 .vscode/
+container_results/
+*.tar
