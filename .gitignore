@@ -6,3 +6,4 @@ results_tmp/
 .vscode/
 container_results/
 *.tar
+*.csv

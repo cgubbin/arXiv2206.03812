@@ -1,3 +1,5 @@
+"""Runs a full simulation for a single film thickness, generating all plots."""
+
 using Pkg;
 Pkg.instantiate();
 

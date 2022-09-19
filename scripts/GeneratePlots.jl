@@ -64,7 +64,7 @@ function generate_eta_1_plot(wavevectors, n_thermal)
 							xtickalign = 1, xticksize = 20),
 					figure = (resolution = (600, 400), font = "CMU Serif"))
 		# break
-		for i in 2:n_max
+		for i in 2:n_max+1
 			lines!(ustrip(wavevectors), mat[:, i] ./ n_thermal[:, i]; color = :black, linestyle = :dash, label = L"\mathrm{Branch}\;2")
 		end
 		xlims!(minimum(ustrip(wavevectors)), maximum(ustrip(wavevectors)))
@@ -152,17 +152,20 @@ function generate_eta_3_plot(wavevectors, pol_frequencies, vgs_d)
 		println(f"Evaluating eta_3 for thickness {d_term} at {t_term}");
 	
 		T_e = parse(Float64, split(t_term, "K")[1]) * 1u"K"
-		drift_velocity = FieldBalance.drift_velocity.(T_e, T_lattice);
-	
-		gamma = - (ENZ.γ * mat) .* (ENZ.ħ * pol_frequencies) .* vgs_d;
+
+		if T_e > T_lattice
+			drift_velocity = FieldBalance.drift_velocity.(T_e, T_lattice);
 		
-		integral = 2. * π * gamma .* wavevectors / (2. * π)^2;
-		result = sum(integral) * dk / drift_velocity / 1e24u"1/m^3"
-	
-		thermal_energy = 1.5 * ENZ.k_B * T_e;
-	
-		res[1, idx] = ustrip(T_e); 
-		res[2, idx] = upreferred(result[1] / thermal_energy)
+			gamma = - (ENZ.γ * mat) .* (ENZ.ħ * pol_frequencies) .* vgs_d;
+			
+			integral = 2. * π * gamma .* wavevectors / (2. * π)^2;
+			result = sum(integral) * dk / drift_velocity / 1e24u"1/m^3"
+		
+			thermal_energy = 1.5 * ENZ.k_B * T_e;
+		
+			res[1, idx] = ustrip(T_e); 
+			res[2, idx] = upreferred(result[1] / thermal_energy)
+		end
 	
 	
 	end
@@ -191,77 +194,83 @@ function generate_figure_4(wavevectors, wavenumbers, pol_frequencies, vgs_d)
 	for file in files_to_act_on
 		println(file)
 		mat = readdlm("results/" * file, ',', Float64);
-	
-		electrical_map = [
-			sum([mat[j, m] * ENZ.lorentzian_density_of_states(ω, pol_frequencies[j, m], ENZ.γ) for m in 1:n_max+1])
-			for j in 1:number_of_plotting_bins, ω in frequencies 
-		]
-	
-		electrical_map_vg = [
-			sum([abs(vgs_d[j, m][1]) * mat[j, m] * ENZ.lorentzian_density_of_states(ω, pol_frequencies[j, m], ENZ.γ) for m in 1:n_max+1])
-			for j in 1:number_of_plotting_bins, ω in frequencies 
-		]
-	
-		thermal_map = [
-			sum([ENZ.bose_einstein(pol_frequencies[j, m], T_lattice) * ENZ.lorentzian_density_of_states(ω, pol_frequencies[j, m], ENZ.γ) for m in 1:n_max+1])
-			for j in 1:number_of_plotting_bins, ω in frequencies 
-		]
-	
-		thermal_map_vg = [
-			sum([abs(vgs_d[j, m][1]) * ENZ.bose_einstein(pol_frequencies[j, m], T_lattice) * ENZ.lorentzian_density_of_states(ω, pol_frequencies[j, m], ENZ.γ) for m in 1:n_max+1])
-			for j in 1:number_of_plotting_bins, ω in frequencies 
-		]
-	
-	
-	
-	
-		f = Figure(resolution = (1400, 1100), font = "CMU Serif", xlabelsize=22)
-	
-		ax = heatmap(f[1, 1][1, 1], ustrip(wavevectors) / 1e9, ustrip(wavenumbers) / 100, ustrip(thermal_map) / 1e-13, colorrange=(0, 1),
-			axis = (title = L"\mathrm{Thermal} \; \times \; 10", xlabel = L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", ylabel = L"\mathrm{Wavenumber}\;(\mathrm{cm}^{-1})"), interpololate = true,
-			colormap = :lajolla
-		)
-		heatmap(f[1, 1][1, 2], ustrip(wavevectors) / 1e9, ustrip(wavenumbers) / 100, ustrip(thermal_map_vg)  / 1e-17, colorrange=(0, 1),
-			axis = (title = L"\mathrm{Thermal}\;\times \; 10 \; \nu_g / c", xlabel = L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", ylabel =  L"\mathrm{Wavenumber}\;(\mathrm{cm}^{-1})"), interpololate = true,
-			colormap = :lajolla
-		)
-	
-		heatmap(f[1, 1][2, 1], ustrip(wavevectors) / 1e9, ustrip(wavenumbers) / 100, ustrip(electrical_map) / 1e-13, colorrange=(0, 10),
-			axis = (title = L"\mathrm{Electrical}", xlabel = L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", ylabel = L"\mathrm{Wavenumber}\;(\mathrm{cm}^{-1})"), interpololate = true,
-			colormap = :lajolla
-		)
-		heatmap(f[1, 1][2, 2], ustrip(wavevectors) / 1e9, ustrip(wavenumbers) / 100, ustrip(electrical_map_vg)   / 1e-17, colorrange=(0, 10),
-			axis = (title = L"\mathrm{Electrical}\; \times \; \nu_g / c", xlabel = L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", ylabel =  L"\mathrm{Wavenumber}\;(\mathrm{cm}^{-1})"), interpololate = true,
-			colormap = :lajolla
-		)
-	
-	# hidedecorations!.([ax, current_axis()])
-	# ax.ylabelvisible = true
-	
-	# f[1, 1][2, 1:2, Bottom()] = Label(f, L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", padding = (0, 0, 0, 10))
-	f[1, 1][3, 1] = Colorbar(f, height = 20, vertical = false, label = "", colormap = :lajolla,
-		# ticklabelalign = (:center, :top), 
-		limits = (0, 1e-13),
-		 ticks=[0.0, 0.5e-13, 1e-13])
-	f[1, 1][3, 2] = Colorbar(f, height = 20, vertical = false, label = "", colormap = :lajolla,
-		# ticklabelalign = (:center, :top),
-		limits = (0, 1e-17),
-		 ticks=[0.0, 0.5e-17, 1e-17])
-	
+
 		substrings = split(split(file, ".")[1], "_")
 		t_term = substrings[3]
 		d_term = substrings[2]
-	
-		save(f"figures/maps_{d_term}_{t_term}.pdf", current_figure())
 
-		outfile = f"postprocessing/figure4_a_map_{d_term}_{t_term}.csv"
-		writedlm(outfile, ustrip(thermal_map), ",");
-		outfile = f"postprocessing/figure4_b_map_{d_term}_{t_term}.csv"
-		writedlm(outfile, ustrip(thermal_map_vg), ",");
-		outfile = f"postprocessing/figure4_c_map_{d_term}_{t_term}.csv"
-		writedlm(outfile, ustrip(electrical_map), ",");
-		outfile = f"postprocessing/figure4_d_map_{d_term}_{t_term}.csv"
-		writedlm(outfile, ustrip(electrical_map_vg), ",");
+		T_e = parse(Float64, split(t_term, "K")[1]) * 1u"K"
+
+		if T_e > T_lattice
+	
+			electrical_map = [
+				sum([mat[j, m] * ENZ.lorentzian_density_of_states(ω, pol_frequencies[j, m], ENZ.γ) for m in 1:n_max+1])
+				for j in 1:number_of_plotting_bins, ω in frequencies 
+			]
+		
+			electrical_map_vg = [
+				sum([abs(vgs_d[j, m][1]) * mat[j, m] * ENZ.lorentzian_density_of_states(ω, pol_frequencies[j, m], ENZ.γ) for m in 1:n_max+1])
+				for j in 1:number_of_plotting_bins, ω in frequencies 
+			]
+		
+			thermal_map = [
+				sum([ENZ.bose_einstein(pol_frequencies[j, m], T_lattice) * ENZ.lorentzian_density_of_states(ω, pol_frequencies[j, m], ENZ.γ) for m in 1:n_max+1])
+				for j in 1:number_of_plotting_bins, ω in frequencies 
+			]
+		
+			thermal_map_vg = [
+				sum([abs(vgs_d[j, m][1]) * ENZ.bose_einstein(pol_frequencies[j, m], T_lattice) * ENZ.lorentzian_density_of_states(ω, pol_frequencies[j, m], ENZ.γ) for m in 1:n_max+1])
+				for j in 1:number_of_plotting_bins, ω in frequencies 
+			]
+		
+		
+		
+		
+			f = Figure(resolution = (1400, 1100), font = "CMU Serif", xlabelsize=22)
+		
+			ax = heatmap(f[1, 1][1, 1], ustrip(wavevectors) / 1e9, ustrip(wavenumbers) / 100, ustrip(thermal_map) / 1e-13, colorrange=(0, 1),
+				axis = (title = L"\mathrm{Thermal} \; \times \; 10", xlabel = L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", ylabel = L"\mathrm{Wavenumber}\;(\mathrm{cm}^{-1})"), interpololate = true,
+				colormap = :lajolla
+			)
+			heatmap(f[1, 1][1, 2], ustrip(wavevectors) / 1e9, ustrip(wavenumbers) / 100, ustrip(thermal_map_vg)  / 1e-17, colorrange=(0, 1),
+				axis = (title = L"\mathrm{Thermal}\;\times \; 10 \; \nu_g / c", xlabel = L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", ylabel =  L"\mathrm{Wavenumber}\;(\mathrm{cm}^{-1})"), interpololate = true,
+				colormap = :lajolla
+			)
+		
+			heatmap(f[1, 1][2, 1], ustrip(wavevectors) / 1e9, ustrip(wavenumbers) / 100, ustrip(electrical_map) / 1e-13, colorrange=(0, 10),
+				axis = (title = L"\mathrm{Electrical}", xlabel = L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", ylabel = L"\mathrm{Wavenumber}\;(\mathrm{cm}^{-1})"), interpololate = true,
+				colormap = :lajolla
+			)
+			heatmap(f[1, 1][2, 2], ustrip(wavevectors) / 1e9, ustrip(wavenumbers) / 100, ustrip(electrical_map_vg)   / 1e-17, colorrange=(0, 10),
+				axis = (title = L"\mathrm{Electrical}\; \times \; \nu_g / c", xlabel = L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", ylabel =  L"\mathrm{Wavenumber}\;(\mathrm{cm}^{-1})"), interpololate = true,
+				colormap = :lajolla
+			)
+		
+		# hidedecorations!.([ax, current_axis()])
+		# ax.ylabelvisible = true
+		
+		# f[1, 1][2, 1:2, Bottom()] = Label(f, L"\mathrm{LTP\;Wavevector}\;(\mathrm{nm}^{-1})", padding = (0, 0, 0, 10))
+		f[1, 1][3, 1] = Colorbar(f, height = 20, vertical = false, label = "", colormap = :lajolla,
+			# ticklabelalign = (:center, :top), 
+			limits = (0, 1e-13),
+			ticks=[0.0, 0.5e-13, 1e-13])
+		f[1, 1][3, 2] = Colorbar(f, height = 20, vertical = false, label = "", colormap = :lajolla,
+			# ticklabelalign = (:center, :top),
+			limits = (0, 1e-17),
+			ticks=[0.0, 0.5e-17, 1e-17])
+		
+		
+			save(f"figures/maps_{d_term}_{t_term}.pdf", current_figure())
+
+			outfile = f"postprocessing/figure4_a_map_{d_term}_{t_term}.csv"
+			writedlm(outfile, ustrip(thermal_map), ",");
+			outfile = f"postprocessing/figure4_b_map_{d_term}_{t_term}.csv"
+			writedlm(outfile, ustrip(thermal_map_vg), ",");
+			outfile = f"postprocessing/figure4_c_map_{d_term}_{t_term}.csv"
+			writedlm(outfile, ustrip(electrical_map), ",");
+			outfile = f"postprocessing/figure4_d_map_{d_term}_{t_term}.csv"
+			writedlm(outfile, ustrip(electrical_map_vg), ",");
+		end
 	end;	
 	outfile = f"postprocessing/figure4_x.csv"
 	writedlm(outfile, ustrip(wavevectors) / 1e9, ",");
@@ -273,9 +282,9 @@ println("Arranging")
 wavevectors, wavenumbers, pol_frequencies, vgs_d, n_thermal = arrange();
 println("Plotting eta 1")
 generate_eta_1_plot(wavevectors, n_thermal)
-println("Plotting eta 2")
-generate_eta_2_plot(wavevectors)
-println("Plotting eta 3")
-generate_eta_3_plot(wavevectors, pol_frequencies, vgs_d)
-println("Plotting figure 4")
-generate_figure_4(wavevectors, wavenumbers, pol_frequencies, vgs_d)
+# println("Plotting eta 2")
+# generate_eta_2_plot(wavevectors)
+# println("Plotting eta 3")
+# generate_eta_3_plot(wavevectors, pol_frequencies, vgs_d)
+# println("Plotting figure 4")
+# generate_figure_4(wavevectors, wavenumbers, pol_frequencies, vgs_d)

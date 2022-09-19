@@ -7,6 +7,7 @@ using Interpolations;
 using TensorCast;
 using Unitful;
 
+"""Holds the local and nonlocal dispersion for a single structure, along with the polariton eigenvectors."""
 struct DispersionResult
 	wavevectors::Vector{Float64}
 	enz_frequencies::Vector{Float64}
@@ -14,6 +15,7 @@ struct DispersionResult
 	polariton_eigenvectors::Array{ComplexF64, 3}
 end
 
+"""Generate the dispersion plot, and the corresponding parameters."""
 function generate_plot()
 	# Generate a linear range of wavevectors over which to calculate the initial local dispersion
     println("Generating the ENZ interpolation")
