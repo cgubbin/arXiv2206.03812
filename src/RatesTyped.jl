@@ -152,7 +152,7 @@ function gammaIntegratedkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max,
 	 
  	result = hcubature(
 			x -> 2 * π * x[1] * gammaKernelStrippedkz(q, x[4], x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0, 0], [1e9, 2 * π, 1e9, 1e9];
-			reltol=1e-3
+			reltol=5e-3
 		)
 	rate += result[1]
 	error += result[2]
