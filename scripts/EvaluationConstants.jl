@@ -10,10 +10,10 @@ function wavenumber_to_omega(wn)
 	return k * c_0
 end
 
-const thickness_target = "5nm" # A string for the target thickness so we can file pick
-const thickness_nm = 5; # The target thickness for the simulation in nm
+const thickness_target = "2nm" # A string for the target thickness so we can file pick
+const thickness_nm = 2; # The target thickness for the simulation in nm
 const d = thickness_nm * 1e-9u"m" # The target thickness for the simulation
-const n_max = 5; # The number of phonon modes to include in the problem
+const n_max = 2; # The number of phonon modes to include in the problem
 const minimum_wavenumber = 82500u"1/m" # The minumum wavenumber to use in plotting
 const maximum_wavenumber = 1e5u"1/m" # The maximum wavenumber to use in plotting
 const minimum_wavevector = ENZ.ω_L * ENZ.ε_c / c_0 * 1.4; # The minimum wavevector (skipping the invalid low-wavevector rise)
