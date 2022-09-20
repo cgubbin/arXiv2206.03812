@@ -54,6 +54,10 @@ function gammaKernel(q::Float64, ω::Float64, k::Float64, k_z::Float64, dk_z::Fl
 		2 * π * abs(κ(q, dk_z, d, n_max, β_j))^2 * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(ω, ω_j, γ)
 end
 
+function gammaKernelAbsorption(q::Float64, ω::Float64, k::Float64, k_z::Float64, dk_z::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
+		2 * π * abs(κ(q, dk_z, d, n_max, β_j))^2 * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(ω, -ω_j, γ)
+end
+
 using Cubature;
 
 function gammaKernelStripped(q, ω, k, k_z, θ, ω_j, β_j, d, n_max, electronic_temperature)
@@ -127,15 +131,48 @@ end
 
 function gammaKernelStrippedkz(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
 	dk_z::Float64 = abs(k_z - k_zd)
-	ω::Float64 = ħ / 2 / m * (k^2 + 2 * k * q * cos(θ) - q^2 - k_zd^2);
+	ω::Float64 = ħ / 2 / m * (k_z^2 + 2 * k * q * cos(θ) - q^2 - k_zd^2);
 
-	if ω < ω_T
+	if ω < ω_T || ω > 1.1 * ω_L
 		return 0
 	else
 		return	real(ustrip(gammaKernel(q, ω, k, k_z, dk_z, ω_j, β_j, d, n_max, electronic_temperature)))
 	end
 end
 
+function gammaKernelStrippedAbsorptionkz(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
+	dk_z::Float64 = abs(k_z - k_zd)
+	ω::Float64 = ħ / 2 / m * (k_z^2 - 2 * k * q * cos(θ) - q^2 - k_zd^2);
+
+	if ω > -ω_T || ω < - 1.1 * ω_L
+		return 0
+	else
+		return	real(ustrip(gammaKernelAbsorption(q, ω, k, k_z, dk_z, ω_j, β_j, d, n_max, electronic_temperature)))
+	end
+end
+
+function gammaIntegratedAbsortionkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max, j)
+
+	rate::Float64 = 0;
+	error::Float64 = 0;
+
+
+	ω_j::Float64 = ustrip(ω_pol[j](q));
+	β_j::ComplexF64 = β_enz[j](q);
+
+	q = ustrip(q);
+	electronic_temperature = ustrip(electronic_temperature);
+	d = ustrip(d);
+	 
+ 	result = hcubature(
+			x -> 2 * π * x[1] * gammaKernelStrippedAbsorptionkz(q, x[4], x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0, 0], [1e9, 2 * π, 1e9, 1e9];
+			reltol=5e-3
+		)
+	rate += result[1]
+	error += result[2]
+	# next!(p)
+	rate, error
+end
 
 function gammaIntegratedkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max, j)
 

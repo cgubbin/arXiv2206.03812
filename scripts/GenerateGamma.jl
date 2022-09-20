@@ -78,6 +78,14 @@ end
 
 	  result
   end
+
+  function generate_single_temperature_abs(wavevector, temperature, polariton_ω, enz_hopfield, group_velocities)
+      result = [
+                RatesTyped.gammaIntegratedAbsorptionkzj(wavevector, polariton_ω, enz_hopfield, d, temperature, n_max, j)[1]
+                for j in 1:n_max+1
+               ];
+
+	  result
 end
 
 
@@ -106,5 +114,25 @@ for temperature in temperatures
 
 	outfile = f"results/ep_{stripped_thickness:.0f}nm_{stripped_temperature:.0f}K.csv"
 	writedlm(outfile, result, ",");
+
+	result = @showprogress 1 f"Computing absorption for temperature {stripped_temperature}K..." pmap(wavevectors) do q
+		try
+			x = generate_single_temperature_absorption(
+				q, temperature, polariton_ω, enz_hopfield, group_velocities
+			);
+			x
+		catch e
+			@warn "failed to solve"
+			rethrow(e)
+		end
+	end
+
+	@cast result[i, j] := result[i][j];
+
+	result = result * 1e24u"1/s" / ENZ.γ;
+
+	stripped_thickness = ustrip(d) / 1e-9;
+
+	outfile = f"results/ep_abs_{stripped_thickness:.0f}nm_{stripped_temperature:.0f}K.csv"
 
 end
