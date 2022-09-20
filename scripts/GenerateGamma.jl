@@ -79,7 +79,7 @@ end
 	  result
   end
 
-  function generate_single_temperature_abs(wavevector, temperature, polariton_ω, enz_hopfield, group_velocities)
+  function generate_single_temperature_absorption(wavevector, temperature, polariton_ω, enz_hopfield, group_velocities)
       result = [
                 RatesTyped.gammaIntegratedAbsorptionkzj(wavevector, polariton_ω, enz_hopfield, d, temperature, n_max, j)[1]
                 for j in 1:n_max+1
