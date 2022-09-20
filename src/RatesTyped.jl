@@ -151,7 +151,7 @@ function gammaKernelStrippedAbsorptionkz(q::Float64, k_zd::Float64, k::Float64, 
 	end
 end
 
-function gammaIntegratedAbsortionkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max, j)
+function gammaIntegratedAbsorptionkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max, j)
 
 	rate::Float64 = 0;
 	error::Float64 = 0;
