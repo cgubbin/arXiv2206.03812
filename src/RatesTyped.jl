@@ -133,11 +133,11 @@ function gammaKernelStrippedkzb(q::Float64, k_zd::Float64, k::Float64, k_z::Floa
 	dk_z::Float64 = abs(k_z - k_zd)
 	ω::Float64 = ħ / 2 / m * (k_z^2 + 2 * k * q * cos(θ) - q^2 - k_zd^2);
 
-	if ω < ω_T || ω > 1.1 * ω_L
-		return 0
-	else
+	# if ω < ω_T || ω > 1.1 * ω_L
+	# 	return 0
+	# else
 		return	real(ustrip(gammaKernel(q, ω, k, k_z, dk_z, ω_j, β_j, d, n_max, electronic_temperature)))
-	end
+	# end
 end
 
 function gammaKernelStrippedkz(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
