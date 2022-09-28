@@ -143,8 +143,8 @@ end
 function gammaKernelStrippedkz(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
 	ω_min = ω_T
 	ω_max = 1.1 * ω_L
-	k_zd_min = sqrt(k_z^2 + 2 * k * q * cos(θ) - q^2 - 2 * m * ω_max / ħ)
-	k_zd_max = sqrt(k_z^2 + 2 * k * q * cos(θ) - q^2 - 2 * m * ω_min / ħ)
+	k_zd_min = sqrt(Complex(k_z^2 + 2 * k * q * cos(θ) - q^2 - 2 * m * ω_max / ħ))
+	k_zd_max = sqrt(Complex(k_z^2 + 2 * k * q * cos(θ) - q^2 - 2 * m * ω_min / ħ))
 
 	k_zd_min = real(k_zd_min)
 	k_zd_max = real(k_zd_max)
@@ -176,8 +176,8 @@ end
 function gammaKernelStrippedAbsorptionkz(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
 	ω_min = ω_T
 	ω_max = 1.1 * ω_L
-	k_zd_min = sqrt(k_z^2 - 2 * k * q * cos(θ) - q^2 - 2 * m * ω_max / ħ)
-	k_zd_max = sqrt(k_z^2 - 2 * k * q * cos(θ) - q^2 - 2 * m * ω_min / ħ)
+	k_zd_min = sqrt(Complex(k_z^2 - 2 * k * q * cos(θ) - q^2 - 2 * m * ω_max / ħ))
+	k_zd_max = sqrt(Complex(k_z^2 - 2 * k * q * cos(θ) - q^2 - 2 * m * ω_min / ħ))
 
 	k_zd_min = real(k_zd_min)
 	k_zd_max = real(k_zd_max)
