@@ -129,7 +129,7 @@ function gammaIntegratedωj(q::Float64, ω_ENZ::Float64, d::Float64, electronic_
 	rate, error
 end
 
-function gammaKernelStrippedkz(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
+function gammaKernelStrippedkzb(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
 	dk_z::Float64 = abs(k_z - k_zd)
 	ω::Float64 = ħ / 2 / m * (k_z^2 + 2 * k * q * cos(θ) - q^2 - k_zd^2);
 
@@ -140,15 +140,59 @@ function gammaKernelStrippedkz(q::Float64, k_zd::Float64, k::Float64, k_z::Float
 	end
 end
 
-function gammaKernelStrippedAbsorptionkz(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
-	dk_z::Float64 = abs(k_z - k_zd)
-	ω::Float64 = ħ / 2 / m * (k_z^2 - 2 * k * q * cos(θ) - q^2 - k_zd^2);
+function gammaKernelStrippedkz(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
+	ω_min = ω_T
+	ω_max = 1.1 * ω_L
+	k_zd_min = sqrt(k_z^2 + 2 * k * q * cos(θ) - q^2 - 2 * m * ω_max / ħ)
+	k_zd_max = sqrt(k_z^2 + 2 * k * q * cos(θ) - q^2 - 2 * m * ω_min / ħ)
 
-	if ω > -ω_T || ω < - 1.1 * ω_L
+	k_zd_min = real(k_zd_min)
+	k_zd_max = real(k_zd_max)
+
+	if k_zd_min == 0.0 && k_zd_max == 0.0
 		return 0
-	else
-		return	real(ustrip(gammaKernelAbsorption(q, ω, k, k_z, dk_z, ω_j, β_j, d, n_max, electronic_temperature)))
 	end
+
+ 	result = hcubature(
+			x -> gammaKernelStrippedkzb(q, x[1], k, k_z, θ, ω_j, β_j, d, n_max, electronic_temperature), [k_zd_min], [k_zd_max];
+			reltol=1e-2
+		)
+
+
+	return result[1]
+end
+
+function gammaKernelStrippedAbsorptionkzb(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
+	dk_z::Float64 = abs(k_z - k_zd)
+	ω::Float64 = - ħ / 2 / m * (k_z^2 - 2 * k * q * cos(θ) - q^2 - k_zd^2);
+
+	# if ω > -ω_T || ω < - 1.1 * ω_L
+	# 	return 0
+	# else
+	return	real(ustrip(gammaKernelAbsorption(q, ω, k, k_z, dk_z, ω_j, β_j, d, n_max, electronic_temperature)))
+	# end
+end
+
+function gammaKernelStrippedAbsorptionkz(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
+	ω_min = ω_T
+	ω_max = 1.1 * ω_L
+	k_zd_min = sqrt(k_z^2 - 2 * k * q * cos(θ) - q^2 - 2 * m * ω_max / ħ)
+	k_zd_max = sqrt(k_z^2 - 2 * k * q * cos(θ) - q^2 - 2 * m * ω_min / ħ)
+
+	k_zd_min = real(k_zd_min)
+	k_zd_max = real(k_zd_max)
+
+	if k_zd_min == 0.0 && k_zd_max == 0.0
+		return 0
+	end
+
+ 	result = hcubature(
+			x -> gammaKernelStrippedAbsorptionkzb(q, x[1], k, k_z, θ, ω_j, β_j, d, n_max, electronic_temperature), [k_zd_min], [k_zd_max];
+			reltol=1e-2
+		)
+
+
+	return result[1]
 end
 
 function gammaIntegratedAbsorptionkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max, j)
@@ -164,9 +208,14 @@ function gammaIntegratedAbsorptionkzj(q, ω_pol, β_enz, d, electronic_temperatu
 	electronic_temperature = ustrip(electronic_temperature);
 	d = ustrip(d);
 	 
+ 	# result = hcubature(
+	# 		x -> 2 * π * x[1] * gammaKernelStrippedAbsorptionkz(q, x[4], x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0, 0], [1e9, 2 * π, 1e9, 1e9];
+	# 		reltol=1e-2, maxevals=5000000
+	# 	)
+
  	result = hcubature(
-			x -> 2 * π * x[1] * gammaKernelStrippedAbsorptionkz(q, x[4], x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0, 0], [1e9, 2 * π, 1e9, 1e9];
-			reltol=1e-2, maxevals=5000000
+			x -> 2 * π * x[1] * gammaKernelStrippedAbsorptionkz(q, x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0], [1e9, 2 * π, 1e9];
+			reltol=1e-2, maxevals=50000000
 		)
 	rate += result[1]
 	error += result[2]
@@ -191,9 +240,13 @@ function gammaIntegratedkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max,
 	electronic_temperature = ustrip(electronic_temperature);
 	d = ustrip(d);
 	 
+ 	# result = hcubature(
+	# 		x -> 2 * π * x[1] * gammaKernelStrippedkz(q, x[4], x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0, 0], [1e9, 2 * π, 1e9, 1e9];
+	# 		reltol=1e-2, maxevals=5000000
+	# 	)
  	result = hcubature(
-			x -> 2 * π * x[1] * gammaKernelStrippedkz(q, x[4], x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0, 0], [1e9, 2 * π, 1e9, 1e9];
-			reltol=1e-2, maxevals=5000000
+			x -> 2 * π * x[1] * gammaKernelStrippedkz(q, x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0], [1e9, 2 * π, 1e9];
+			reltol=1e-2, maxevals=50000000
 		)
 	rate += result[1]
 	error += result[2]
