@@ -21,12 +21,12 @@ function overlapΞ(q::Float64, Q::Float64, d::Float64, m::Int64)
 	return dQ * (1 + exp(im * d * dQ)) / (dQ^2 - ζ^2)
 end
 
-function κ(q::Float64, Q::Float64, d::Float64, n_max::Int64, β_j::ComplexF64)
+function κ_sqr(q::Float64, Q::Float64, d::Float64, n_max::Int64, β_j::ComplexF64)
 	result::ComplexF64 = 0.;
 	for i in 1:n_max
 		B::Float64 = normalisationB(q, d, i)
 		Ξ::ComplexF64 = overlapΞ(q, Q, d, i)
-		result += B * Ξ * β_j * e / ħ
+		result += abs(B * Ξ * β_j * e / ħ)^2
 	end
 	result
 end
@@ -51,11 +51,11 @@ function dk_dω(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64
 end
 
 function gammaKernel(q::Float64, ω::Float64, k::Float64, k_z::Float64, dk_z::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
-		2 * π * abs(κ(q, dk_z, d, n_max, β_j))^2 * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(ω, ω_j, γ)
+		2 * π * κ_sqr(q, dk_z, d, n_max, β_j) * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(ω, ω_j, γ)
 end
 
 function gammaKernelAbsorption(q::Float64, ω::Float64, k::Float64, k_z::Float64, dk_z::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
-		2 * π * abs(κ(q, dk_z, d, n_max, β_j))^2 * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(ω, -ω_j, γ)
+		2 * π * κ_sqr(q, dk_z, d, n_max, β_j) * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(ω, -ω_j, γ)
 end
 
 using Cubature;
