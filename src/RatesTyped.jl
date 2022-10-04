@@ -18,6 +18,7 @@ function overlapΞ(q::Float64, Q::Float64, d::Float64, m::Int64)
 	n::Int64 = 2 * m - 1
 	ζ::Float64 = n * π / d;
 	dQ::Float64 = q - Q
+	# return \zeta * (1 + exp(im * d * dQ)) / (dQ^2 - ζ^2)
 	return dQ * (1 + exp(im * d * dQ)) / (dQ^2 - ζ^2)
 end
 
@@ -214,7 +215,7 @@ function gammaIntegratedAbsorptionkzj(q, ω_pol, β_enz, d, electronic_temperatu
 	# 	)
 
  	result = hcubature(
-			x -> 2 * π * x[1] * gammaKernelStrippedAbsorptionkz(q, x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0], [1e9, 2 * π, 1e9];
+			x -> 2 * π * x[1] * gammaKernelStrippedAbsorptionkz(q, x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0], [5e9, 2 * π, 5e9];
 			reltol=1e-2, maxevals=50000000
 		)
 	rate += result[1]
@@ -245,7 +246,7 @@ function gammaIntegratedkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max,
 	# 		reltol=1e-2, maxevals=5000000
 	# 	)
  	result = hcubature(
-			x -> 2 * π * x[1] * gammaKernelStrippedkz(q, x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0], [1e9, 2 * π, 1e9];
+			x -> 2 * π * x[1] * gammaKernelStrippedkz(q, x[1], x[3], x[2], ω_j, β_j, d, n_max, electronic_temperature), [0, 0, 0], [5e9, 2 * π, 5e9];
 			reltol=1e-2, maxevals=50000000
 		)
 	rate += result[1]
