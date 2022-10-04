@@ -22,12 +22,12 @@ function overlapΞ(q::Float64, Q::Float64, d::Float64, m::Int64)
 	return dQ * (1 + exp(-im * d * dQ)) / (dQ^2 - ζ^2)
 end
 
-function κ_sqr(q::Float64, Q::Float64, d::Float64, n_max::Int64, β_j::ComplexF64)
+function κ_sqr(q::Float64, Q::Float64, d::Float64, n_max::Int64, β_j::Vector{ComplexF64})
 	result::ComplexF64 = 0.;
 	for i in 1:n_max
 		B::Float64 = normalisationB(q, d, i)
 		Ξ::ComplexF64 = overlapΞ(q, Q, d, i)
-		result += abs(B * Ξ * β_j * e / ħ)^2
+		result += abs(B * Ξ * β_j[i] * e / ħ)^2
 	end
 	result
 end
@@ -51,12 +51,12 @@ function dk_dω(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64
 	m / ħ / transferredOutOfPlane(q, k, k_z, θ, ω_j)
 end
 
-function gammaKernel(q::Float64, ω::Float64, k::Float64, k_z::Float64, dk_z::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
-		2 * π * κ_sqr(q, dk_z, d, n_max, β_j) * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(ω, ω_j, γ)
+function gammaKernel(q::Float64, ω::Float64, k::Float64, k_z::Float64, dk_z::Float64, ω_j::Float64, β_j::Vector{ComplexF64}, d::Float64, n_max::Int64, electronic_temperature::Float64)
+		2 * π * κ_sqr(q, dk_z, d, n_max, β_j) * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(abs(ω), abs(ω_j), γ)
 end
 
-function gammaKernelAbsorption(q::Float64, ω::Float64, k::Float64, k_z::Float64, dk_z::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
-		2 * π * κ_sqr(q, dk_z, d, n_max, β_j) * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(ω, -ω_j, γ)
+function gammaKernelAbsorption(q::Float64, ω::Float64, k::Float64, k_z::Float64, dk_z::Float64, ω_j::Float64, β_j::Vector{ComplexF64}, d::Float64, n_max::Int64, electronic_temperature::Float64)
+		2 * π * κ_sqr(q, dk_z, d, n_max, β_j) * electronDistribution(k, k_z, electronic_temperature) * ENZ.lorentzian_density_of_states(abs(ω), abs(ω_j), γ)
 end
 
 using Cubature;
@@ -130,18 +130,18 @@ function gammaIntegratedωj(q::Float64, ω_ENZ::Float64, d::Float64, electronic_
 	rate, error
 end
 
-function gammaKernelStrippedkzb(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
-	dk_z::Float64 = abs(k_z - k_zd)
-	ω::Float64 = ħ / 2 / m * (k_z^2 + 2 * k * q * cos(θ) - q^2 - k_zd^2);
+function gammaKernelStrippedkzb(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::Vector{ComplexF64}, d::Float64, n_max::Int64, electronic_temperature::Float64)
+	dk_z::Float64 = (k_z - k_zd)
+	Δω::Float64 = ħ / 2 / m * (k_z^2 + 2 * k * q * cos(θ) - q^2 - k_zd^2);
 
 	# if ω < ω_T || ω > 1.1 * ω_L
 	# 	return 0
 	# else
-		return	real(ustrip(gammaKernel(q, ω, k, k_z, dk_z, ω_j, β_j, d, n_max, electronic_temperature)))
+		return	real(ustrip(gammaKernel(q, Δω, k, k_z, dk_z, ω_j, β_j, d, n_max, electronic_temperature)))
 	# end
 end
 
-function gammaKernelStrippedkz(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
+function gammaKernelStrippedkz(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::Vector{ComplexF64}, d::Float64, n_max::Int64, electronic_temperature::Float64)
 	ω_min = ω_T * 0.0
 	ω_max = 1.1 * ω_L * 2.0
 	k_zd_min = sqrt(Complex(k_z^2 + 2 * k * q * cos(θ) - q^2 - 2 * m * ω_max / ħ))
@@ -163,18 +163,18 @@ function gammaKernelStrippedkz(q::Float64, k::Float64, k_z::Float64, θ::Float64
 	return result[1]
 end
 
-function gammaKernelStrippedAbsorptionkzb(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
-	dk_z::Float64 = abs(k_z - k_zd)
-	ω::Float64 = - ħ / 2 / m * (k_z^2 - 2 * k * q * cos(θ) - q^2 - k_zd^2);
+function gammaKernelStrippedAbsorptionkzb(q::Float64, k_zd::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::Vector{ComplexF64}, d::Float64, n_max::Int64, electronic_temperature::Float64)
+	dk_z::Float64 = (k_z - k_zd)
+	Δω::Float64 = - ħ / 2 / m * (k_z^2 - 2 * k * q * cos(θ) - q^2 - k_zd^2);
 
 	# if ω > -ω_T || ω < - 1.1 * ω_L
 	# 	return 0
 	# else
-	return	real(ustrip(gammaKernelAbsorption(q, ω, k, k_z, dk_z, ω_j, β_j, d, n_max, electronic_temperature)))
+	return	real(ustrip(gammaKernelAbsorption(q, Δω, k, k_z, dk_z, ω_j, β_j, d, n_max, electronic_temperature)))
 	# end
 end
 
-function gammaKernelStrippedAbsorptionkz(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::ComplexF64, d::Float64, n_max::Int64, electronic_temperature::Float64)
+function gammaKernelStrippedAbsorptionkz(q::Float64, k::Float64, k_z::Float64, θ::Float64, ω_j::Float64, β_j::Vector{ComplexF64}, d::Float64, n_max::Int64, electronic_temperature::Float64)
 	ω_min = ω_T * 0.0
 	ω_max = 1.1 * ω_L * 2.0
 	k_zd_min = sqrt(Complex(k_z^2 - 2 * k * q * cos(θ) - q^2 - 2 * m * ω_max / ħ))
@@ -196,14 +196,16 @@ function gammaKernelStrippedAbsorptionkz(q::Float64, k::Float64, k_z::Float64, �
 	return result[1]
 end
 
-function gammaIntegratedAbsorptionkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max, j)
+function gammaIntegratedAbsorptionkzj(q, ω_pol, β_phonon, d, electronic_temperature, n_max, j)
 
 	rate::Float64 = 0;
 	error::Float64 = 0;
 
 
 	ω_j::Float64 = ustrip(ω_pol[j](q));
-	β_j::ComplexF64 = β_enz[j](q);
+	β_j::Vector{ComplexF64} = [
+		β(q) for β in β_phonon[(j-1)*n_max+1:j*n_max]
+	]
 
 	q = ustrip(q);
 	electronic_temperature = ustrip(electronic_temperature);
@@ -228,14 +230,16 @@ function gammaIntegratedAbsorptionkzj(q, ω_pol, β_enz, d, electronic_temperatu
 	rate, error
 end
 
-function gammaIntegratedkzj(q, ω_pol, β_enz, d, electronic_temperature, n_max, j)
+function gammaIntegratedkzj(q, ω_pol, β_phonon, d, electronic_temperature, n_max, j)
 
 	rate::Float64 = 0;
 	error::Float64 = 0;
 
 
 	ω_j::Float64 = ustrip(ω_pol[j](q));
-	β_j::ComplexF64 = β_enz[j](q);
+	β_j::Vector{ComplexF64} = [
+		β(q) for β in β_phonon[(j-1)*n_max+1:j*n_max]
+	]
 
 	q = ustrip(q);
 	electronic_temperature = ustrip(electronic_temperature);
