@@ -17,9 +17,9 @@ end
 function overlapΞ(q::Float64, Q::Float64, d::Float64, m::Int64)
 	n::Int64 = 2 * m - 1
 	ζ::Float64 = n * π / d;
-	dQ::Float64 = q - Q
-	return ζ * (1 + exp(im * d * dQ)) / (dQ^2 - ζ^2)
-	# return dQ * (1 + exp(im * d * dQ)) / (dQ^2 - ζ^2)
+	dQ::Float64 = Q
+	# return ζ * (1 + exp(-im * d * dQ)) / (dQ^2 - ζ^2)
+	return dQ * (1 + exp(-im * d * dQ)) / (dQ^2 - ζ^2)
 end
 
 function κ_sqr(q::Float64, Q::Float64, d::Float64, n_max::Int64, β_j::ComplexF64)
